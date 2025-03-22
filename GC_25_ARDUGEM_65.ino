@@ -44,8 +44,8 @@ int dir2X = -1, dir2Y = 0;
 #define COLOR_BROWN 0xA145
 #define COLOR_BLACK 0x0000
 #define COLOR_WHITE 0xFFFF
-#define COLOR_BLUE 0x001F     // Snake 1 body
-#define COLOR_RED 0xF800      // Snake 2 body
+#define COLOR_BLUE 0x001F  // Snake 1 body
+#define COLOR_RED 0xF800   // Snake 2 body
 #define COLOR_GREEN 0x07E0
 #define COLOR_GRAY 0x7BEF
 
@@ -72,11 +72,9 @@ int wallvX[5], wallvY[5];  // Vertical walls
 
 // Flags for collision update
 bool collisionOccurred = false;
-unsigned long wallRespawnTimes[10] = {0};
-const unsigned long wallRespawnDelay = 10000;
 
-unsigned long gameStartTime;               // Stores when the game started
-const unsigned long gameDuration = 30000;  // 30 seconds in milliseconds
+unsigned long long gameStartTime;               // Stores when the game started
+const unsigned long long gameDuration = 30000;  // 30 seconds in milliseconds
 
 // Food variables
 #define FOOD_COUNT 10
@@ -87,12 +85,12 @@ void encoder1ISR() {
   int stateA = digitalRead(ENC1_CLK);
   int stateB = digitalRead(ENC1_DT);
   int direction = (stateA == stateB) ? -1 : 1;
-  
+
   if (direction != lastEncoder1Dir)
     encoder1Steps = 0;
   encoder1Steps += direction;
   lastEncoder1Dir = direction;
-  
+
   if (abs(encoder1Steps) >= ROTATION_THRESHOLD) {
     encoder1Pos += direction;
     encoder1Steps = 0;
@@ -103,12 +101,12 @@ void encoder2ISR() {
   int stateA = digitalRead(ENC2_CLK);
   int stateB = digitalRead(ENC2_DT);
   int direction = (stateA == stateB) ? -1 : 1;
-  
+
   if (direction != lastEncoder2Dir)
     encoder2Steps = 0;
   encoder2Steps += direction;
   lastEncoder2Dir = direction;
-  
+
   if (abs(encoder2Steps) >= ROTATION_THRESHOLD) {
     encoder2Pos += direction;
     encoder2Steps = 0;
@@ -121,7 +119,7 @@ void updateDirection() {
   Serial.println(encoder1Pos);
   Serial.print("Encoder2: ");
   Serial.println(encoder2Pos);
-  
+
   if (encoder2Pos > 0) {
     int temp = dir2X;
     dir2X = -dir2Y;
@@ -133,7 +131,7 @@ void updateDirection() {
     dir2Y = -temp;
     encoder2Pos = 0;
   }
-  
+
   if (encoder1Pos > 0) {
     int temp = dir1X;
     dir1X = -dir1Y;
@@ -196,12 +194,11 @@ void spawnFood() {
       validPosition = true;
       x = random(0, GRID_WIDTH);
       y = random(0, GRID_HEIGHT);
-      
+
       // Check if the position is occupied by any walls
       for (int j = 0; j < 5; j++) {
         for (int k = 0; k < 3; k++) {
-          if ((x == wallvX[j] && y == wallvY[j] + k) ||
-              (x == wallhX[j] + k && y == wallhY[j])) {
+          if ((x == wallvX[j] && y == wallvY[j] + k) || (x == wallhX[j] + k && y == wallhY[j])) {
             validPosition = false;
             break;
           }
@@ -209,13 +206,13 @@ void spawnFood() {
         if (!validPosition)
           break;
       }
-      
+
       // Check if the position is occupied by a snake
       if (validPosition && isPositionOccupied(x, y)) {
         validPosition = false;
       }
     } while (!validPosition);
-    
+
     foodX[i] = x;
     foodY[i] = y;
   }
@@ -326,14 +323,14 @@ void testDisplay() {
 void moveSnake(int snakeX[], int snakeY[], int &length, int dirX, int dirY) {
   int oldTailX = snakeX[length - 1];
   int oldTailY = snakeY[length - 1];
-  
+
   for (int i = length - 1; i > 0; i--) {
     snakeX[i] = snakeX[i - 1];
     snakeY[i] = snakeY[i - 1];
   }
   snakeX[0] += dirX;
   snakeY[0] += dirY;
-  
+
   if (snakeX[0] < 0)
     snakeX[0] = GRID_WIDTH - 1;
   if (snakeX[0] >= GRID_WIDTH)
@@ -348,13 +345,15 @@ void moveSnake(int snakeX[], int snakeY[], int &length, int dirX, int dirY) {
 void checkSnakeCollision() {
   for (int i = 0; i < snake2Length; i++) {
     if (snake1X[0] == snake2X[i] && snake1Y[0] == snake2Y[i]) {
-      snake1Length = 5;
+      if (snake1Length > 5)
+        snake1Length--;
       collisionOccurred = true;
     }
   }
   for (int i = 0; i < snake1Length; i++) {
     if (snake2X[0] == snake1X[i] && snake2Y[0] == snake1Y[i]) {
-      snake2Length = 5;
+      if (snake2Length > 5)
+        snake2Length--;
       collisionOccurred = true;
     }
   }
@@ -364,7 +363,10 @@ void checkSnakeCollision() {
 void displayTime(int secondsRemaining) {
   display.fillRectangle(0, 0, SCREEN_WIDTH, TOP_PADDING, COLOR_BROWN);
   display.setFont(Terminal6x8);
-  display.drawText(50, 2, "Time: " + String(secondsRemaining), COLOR_WHITE);
+  String timeText = "Time: " + String(secondsRemaining);
+  int textWidth = timeText.length() * 6;
+  int xPosition = (SCREEN_WIDTH - textWidth) / 2;
+  display.drawText(xPosition, 2, timeText, COLOR_WHITE);
 }
 
 // --- Draw Bottom Padding ---
@@ -404,12 +406,12 @@ void showEndScreen() {
     snake1Wins = true;
   else if (snake2Length > snake1Length)
     snake2Wins = true;
-  
+
   gameStarted = false;
-  
+
   display.clear();
   display.setBackgroundColor(COLOR_BLACK);
-  
+
   if (snake1Wins)
     display.drawText(50, (SCREEN_HEIGHT / 2), "Snake 1 Wins!", COLOR_WHITE);
   else if (snake2Wins)
@@ -420,26 +422,38 @@ void showEndScreen() {
   // Reset variables to initial values
   snake1Length = 5;
   snake2Length = 5;
-  dir1X = 1; dir1Y = 0;
-  dir2X = -1; dir2Y = 0;
-  encoder1Pos = 0; encoder2Pos = 0;
-  encoder1Steps = 0; encoder2Steps = 0;
-  lastEncoder1Dir = 0; lastEncoder2Dir = 0;
+  dir1X = 1;
+  dir1Y = 0;
+  dir2X = -1;
+  dir2Y = 0;
+  encoder1Pos = 0;
+  encoder2Pos = 0;
+  encoder1Steps = 0;
+  encoder2Steps = 0;
+  lastEncoder1Dir = 0;
+  lastEncoder2Dir = 0;
   snake1Wins = false;
   snake2Wins = false;
   collisionOccurred = false;
   for (int i = 0; i < MAX_LENGTH; i++) {
-    snake1X[i] = 0; snake1Y[i] = 0;
-    snake2X[i] = 0; snake2Y[i] = 0;
-    prevSnake1X[i] = 0; prevSnake1Y[i] = 0;
-    prevSnake2X[i] = 0; prevSnake2Y[i] = 0;
+    snake1X[i] = 0;
+    snake1Y[i] = 0;
+    snake2X[i] = 0;
+    snake2Y[i] = 0;
+    prevSnake1X[i] = 0;
+    prevSnake1Y[i] = 0;
+    prevSnake2X[i] = 0;
+    prevSnake2Y[i] = 0;
   }
   for (int i = 0; i < 5; i++) {
-    wallhX[i] = 0; wallhY[i] = 0;
-    wallvX[i] = 0; wallvY[i] = 0;
+    wallhX[i] = 0;
+    wallhY[i] = 0;
+    wallvX[i] = 0;
+    wallvY[i] = 0;
   }
   for (int i = 0; i < FOOD_COUNT; i++) {
-    foodX[i] = 0; foodY[i] = 0;
+    foodX[i] = 0;
+    foodY[i] = 0;
   }
 }
 
@@ -452,14 +466,18 @@ void showStartScreen() {
 
 // --- Check if Start Button is Pressed ---
 bool checkStartPressed() {
+  if(digitalRead(ENC1_SW) == LOW)
+    Serial.println("encoder 1 hit");
+  if(digitalRead(ENC2_SW) == LOW)
+    Serial.println("encoder 2 hit");
   return (digitalRead(ENC1_SW) == LOW && digitalRead(ENC2_SW) == LOW);
 }
 
 // --- Main Game Loop ---
 void gameLoop() {
-  gameStartTime = millis();
+  gameStartTime = (unsigned long long)millis();
   collisionOccurred = false;
-  
+
   // Initialize snake positions
   for (int i = 0; i < snake1Length; i++) {
     snake1X[i] = GRID_WIDTH / 4 + i;
@@ -469,7 +487,7 @@ void gameLoop() {
     snake2X[i] = (3 * GRID_WIDTH) / 4 - i;
     snake2Y[i] = GRID_HEIGHT / 4;
   }
-  
+
   // Initialize previous snake arrays
   prevSnake1Length = snake1Length;
   for (int i = 0; i < snake1Length; i++) {
@@ -481,14 +499,14 @@ void gameLoop() {
     prevSnake2X[i] = snake2X[i];
     prevSnake2Y[i] = snake2Y[i];
   }
-  
+
   spawnWalls();
   spawnFood();
   drawWalls();
   drawFood();
-  
+
   Serial.println("Game started");
-  
+
   // Draw initial snakes
   for (int i = 0; i < snake1Length; i++) {
     if (i == 0)
@@ -502,16 +520,16 @@ void gameLoop() {
     else
       drawSegment(snake2X[i], snake2Y[i], COLOR_RED);
   }
-  
+
   displayBottomPadding();
-  
-  while (true) {
-    unsigned long elapsed = millis() - gameStartTime;
+
+while (true) {
+    unsigned long long elapsed = (unsigned long long)millis() - gameStartTime;
     if (elapsed >= gameDuration)
-      break;
-    int secondsRemaining = (gameDuration - elapsed) / 1000;
+        break;
+    int secondsRemaining = (gameDuration - elapsed) / 1000; // Calculate remaining time
     displayTime(secondsRemaining);
-    
+
     // Save current snake positions before moving
     prevSnake1Length = snake1Length;
     for (int i = 0; i < snake1Length; i++) {
@@ -523,13 +541,13 @@ void gameLoop() {
       prevSnake2X[i] = snake2X[i];
       prevSnake2Y[i] = snake2Y[i];
     }
-    
+
     updateDirection();
-    
+
     // Move snakes
     moveSnake(snake1X, snake1Y, snake1Length, dir1X, dir1Y);
     moveSnake(snake2X, snake2Y, snake2Length, dir2X, dir2Y);
-    
+
     // Extra move if button pressed
     if (digitalRead(ENC1_SW) == LOW) {
       moveSnake(snake1X, snake1Y, snake1Length, dir1X, dir1Y);
@@ -537,14 +555,14 @@ void gameLoop() {
     if (digitalRead(ENC2_SW) == LOW) {
       moveSnake(snake2X, snake2Y, snake2Length, dir2X, dir2Y);
     }
-    
+
     // Check collisions
     checkFoodCollision(snake1Length, snake1X, snake1Y);
     checkFoodCollision(snake2Length, snake2X, snake2Y);
     checkWallCollision(snake1Length, snake1X, snake1Y);
     checkWallCollision(snake2Length, snake2X, snake2Y);
     checkSnakeCollision();
-    
+
     // Incremental update: update only changed cells
     updateSnakeDisplay(prevSnake1Length, prevSnake1X, prevSnake1Y,
                        snake1Length, snake1X, snake1Y,
@@ -552,12 +570,10 @@ void gameLoop() {
     updateSnakeDisplay(prevSnake2Length, prevSnake2X, prevSnake2Y,
                        snake2Length, snake2X, snake2Y,
                        COLOR_MAGENTA, COLOR_RED);
-    
+
     // Redraw food and bottom padding
     drawFood();
     displayBottomPadding();
-    
-    delay(100);
   }
   showEndScreen();
 }
@@ -569,17 +585,17 @@ void setup() {
   display.setBackgroundColor(COLOR_BLACK);
   display.clear();
   display.setFont(Terminal6x8);
-  
+
   pinMode(ENC1_CLK, INPUT);
   pinMode(ENC1_DT, INPUT);
   pinMode(ENC2_CLK, INPUT);
   pinMode(ENC2_DT, INPUT);
   pinMode(ENC1_SW, INPUT_PULLUP);
   pinMode(ENC2_SW, INPUT_PULLUP);
-  
+
   attachInterrupt(digitalPinToInterrupt(ENC1_CLK), encoder1ISR, CHANGE);
   attachInterrupt(digitalPinToInterrupt(ENC2_CLK), encoder2ISR, CHANGE);
-  
+
   showStartScreen();
 }
 
