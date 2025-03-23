@@ -46,12 +46,8 @@ Install the libraries using the Arduino Library Manager or manually from the Ard
 - **Two-player mode** with independent snake movement.  
 - **Survival-based objective** – The player with the **longest snake at 30 seconds wins**.  
 - **Customizable rotary encoder sensitivity** for fine-tuned control.  
-- **Pass-through walls with length reset** for added strategy.  
-- **Colliding with opponent reduces length (if length > 5)**.  
-- **No penalty for self-collision**.  
 - **Speed boost on button press** for quick escapes and aggressive plays.  
-- **Randomly generated walls and food placement** for varied gameplay.  
-- **Score tracking and game-over logic**.  
+- **Randomly generated walls and food placement** for varied gameplay. 
 
 ## **Circuit and Components**  
 ### **Circuit Diagram**  
