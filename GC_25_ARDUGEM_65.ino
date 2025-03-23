@@ -494,11 +494,19 @@ void showStartScreen() {
   for (int i = 1; i < 6; i++)
     display.drawRectangle(0, 0, SCREEN_WIDTH - i, SCREEN_HEIGHT - i, COLOR_WHITE);
 
-  // Grass Background (unchanged)
-  for (int y = 120; y < SCREEN_HEIGHT; y += 4) {
-    for (int x = 2; x < SCREEN_WIDTH - 2; x += 4) {
-      uint16_t grassColor = display.setColor(random(0, 100), random(150, 255), random(0, 100));
-      display.fillRectangle(x, y, x + 3, y + 3, grassColor);
+  // Draw a more natural grass effect at the bottom of the screen
+  for (int x = 0; x < SCREEN_WIDTH; x++) {
+    for (int y = 0; y < 50; y++) {
+      // Use a random chance (e.g., 30% chance) to draw a pixel
+      if (random(0, 100) < 30) {
+        // Generate a green color with slight variation in red and blue components.
+        int greenVal = random(200, 256);  // Keep green high for lush grass
+        int redVal = random(0, 50);
+        int blueVal = random(0, 50);
+        uint16_t grassColor = display.setColor(redVal, greenVal, blueVal);
+        // Draw the pixel at (x, SCREEN_HEIGHT - y)
+        display.drawPixel(x, SCREEN_HEIGHT - y, grassColor);
+      }
     }
   }
 
@@ -562,7 +570,7 @@ void showStartScreen() {
   }
 
   // Final "Press to Start" message
-  display.drawText(50, 175, "Press to Start", COLOR_WHITE);
+  display.drawText(50, 145, "Press to Start", COLOR_WHITE);
 
   // Wait for confirmation
   while (digitalRead(ENC1_SW) == HIGH && digitalRead(ENC2_SW) == HIGH)
