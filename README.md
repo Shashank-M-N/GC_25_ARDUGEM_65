@@ -1,7 +1,7 @@
 # **Double Bite – A Multiplayer-Snake Game for Arduino Nano**  
 
 ## **Video GamePlay**
-[Watch the video here](img/project_vid.mp4)
+[![Gameplay Preview](https://drive.google.com/thumbnail?id=1iwDPH2otM_YJyYd_BknUuA92jNlOp7Oa)](https://drive.google.com/file/d/1iwDPH2otM_YJyYd_BknUuA92jNlOp7Oa/view?usp=sharing)
 
 ## **Description**  
 - **Double Bite** is a **competitive two-player snake game**.  
